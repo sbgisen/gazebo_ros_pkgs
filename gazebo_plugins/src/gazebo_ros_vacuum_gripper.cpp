@@ -134,7 +134,7 @@ void GazeboRosVacuumGripper::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf
 
   // Custom Callback Queue
   ros::AdvertiseOptions ao = ros::AdvertiseOptions::create<std_msgs::Bool>(
-    topic_name_, 1,
+    topic_name_ + "/state", 1,
     boost::bind(&GazeboRosVacuumGripper::Connect, this),
     boost::bind(&GazeboRosVacuumGripper::Disconnect, this),
     ros::VoidPtr(), &queue_);
@@ -143,12 +143,12 @@ void GazeboRosVacuumGripper::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf
   // Custom Callback Queue
   ros::AdvertiseServiceOptions aso1 =
     ros::AdvertiseServiceOptions::create<std_srvs::Empty>(
-    "on", boost::bind(&GazeboRosVacuumGripper::OnServiceCallback,
+    topic_name_ + "/on", boost::bind(&GazeboRosVacuumGripper::OnServiceCallback,
     this, _1, _2), ros::VoidPtr(), &queue_);
   srv1_ = rosnode_->advertiseService(aso1);
   ros::AdvertiseServiceOptions aso2 =
     ros::AdvertiseServiceOptions::create<std_srvs::Empty>(
-    "off", boost::bind(&GazeboRosVacuumGripper::OffServiceCallback,
+    topic_name_ + "/off", boost::bind(&GazeboRosVacuumGripper::OffServiceCallback,
     this, _1, _2), ros::VoidPtr(), &queue_);
   srv2_ = rosnode_->advertiseService(aso2);
 
