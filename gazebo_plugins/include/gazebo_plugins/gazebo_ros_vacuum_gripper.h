@@ -117,7 +117,13 @@ class GazeboRosVacuumGripper : public ModelPlugin
   private: bool OffServiceCallback(std_srvs::Empty::Request &req,
                                 std_srvs::Empty::Response &res);
 
+  /// \brief: A flag showing whether vacuum is 'on' or 'off'
   private: bool status_;
+
+  /// \brief: flag and strings making the attached link unique
+  private: bool is_attached_;
+  private: std::string attached_model_name_;
+  private: std::string attached_model_link_name_;
 
   private: physics::ModelPtr parent_;
 

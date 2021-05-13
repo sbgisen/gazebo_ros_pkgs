@@ -38,6 +38,9 @@ GazeboRosVacuumGripper::GazeboRosVacuumGripper()
 {
   connect_count_ = 0;
   status_ = false;
+  is_attached_ = false;
+  attached_model_name_ = "";
+  attached_model_link_name_ = "";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -195,6 +198,9 @@ void GazeboRosVacuumGripper::UpdateChild()
   grasping_msg.data = false;
   if (!status_) {
     pub_.publish(grasping_msg);
+    is_attached_ = false;
+    attached_model_name_.clear();
+    attached_model_link_name_.clear();
     return;
   }
   // apply force
@@ -212,8 +218,17 @@ void GazeboRosVacuumGripper::UpdateChild()
     {
       continue;
     }
+
+    // skip to attached model
+    if ((is_attached_) && (attached_model_name_ != models[i]->GetName()))
+      continue;
+
     physics::Link_V links = models[i]->GetLinks();
     for (size_t j = 0; j < links.size(); j++) {
+      // skip to attached model link
+      if ((is_attached_) && (attached_model_link_name_ != links[j]->GetName()))
+        continue;
+
 #if GAZEBO_MAJOR_VERSION >= 8
       ignition::math::Pose3d link_pose = links[j]->WorldPose();
 #else
@@ -239,6 +254,13 @@ void GazeboRosVacuumGripper::UpdateChild()
           // TODO(unknown): should apply friction actually
           link_pose.Set(parent_pose.Pos(), link_pose.Rot());
           links[j]->SetWorldPose(link_pose);
+
+          if(!is_attached_)
+          {
+            is_attached_ = true;
+            attached_model_name_ = models[i]->GetName();
+            attached_model_link_name_ = links[j]->GetName();
+          }
         }
         else
         {
@@ -251,6 +273,14 @@ void GazeboRosVacuumGripper::UpdateChild()
           links[j]->AddForce(force);
         }
         grasping_msg.data = true;
+      }
+      else {
+        if(is_attached_)
+        {
+          is_attached_ = false;
+          attached_model_name_.clear();
+          attached_model_link_name_.clear();
+        }
       }
     }
   }
