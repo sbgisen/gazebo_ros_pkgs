@@ -234,8 +234,68 @@ void GazeboRosVacuumGripper::UpdateChild()
 #else
       ignition::math::Pose3d link_pose = links[j]->GetWorldPose().Ign();
 #endif
-      ignition::math::Pose3d diff = parent_pose - link_pose;
-      double norm = diff.Pos().Length();
+
+      ignition::math::Vector3d diff_pos_global = link_pose.Pos() - parent_pose.Pos();
+      ignition::math::Quaterniond diff_rot_global = parent_pose.Rot().Inverse() * link_pose.Rot();
+      double norm = diff_pos_global.Length();
+
+      // consider a collision box
+      const ignition::math::Box collision_box = links[j]->CollisionBoundingBox();
+      if (Volume(collision_box) != 0.0)
+      {
+        // the following nodes are defined in links[j] coordinate
+        const ignition::math::Vector3d box_max = collision_box.Max();
+        const ignition::math::Vector3d box_min = collision_box.Min();
+
+        // calculate pose difference in links[j] coordinate
+        ignition::math::Vector3d diff_pose_child_local = link_pose.Rot() * (- diff_pos_global);
+
+        const ignition::math::Vector3d upper_dist = box_max - diff_pose_child_local;
+        const ignition::math::Vector3d lower_dist = diff_pose_child_local - box_min;
+
+        // saturate the relative position on the box boundaries
+        if (box_min.X() < diff_pose_child_local.X() && diff_pose_child_local.X() < box_max.X())
+        {
+          if (lower_dist.X() <= upper_dist.X())
+          {
+            diff_pose_child_local.X() = lower_dist.X();
+          }
+          else
+          {
+            diff_pose_child_local.X() = upper_dist.X();
+          }
+          norm = 0.0;
+        }
+
+        if (box_min.Y() < diff_pose_child_local.Y() && diff_pose_child_local.Y() < box_max.Y())
+        {
+          if (lower_dist.Y() <= upper_dist.Y())
+          {
+            diff_pose_child_local.Y() = lower_dist.Y();
+          }
+          else
+          {
+            diff_pose_child_local.Y() = upper_dist.Y();
+          }
+          norm = 0.0;
+        }
+
+        if (box_min.Z() < diff_pose_child_local.Z() && diff_pose_child_local.Z() < box_max.Z())
+        {
+          if (lower_dist.Z() <= upper_dist.Z())
+          {
+            diff_pose_child_local.Z() = lower_dist.Z();
+          }
+          else
+          {
+            diff_pose_child_local.Z() = upper_dist.Z();
+          }
+          norm = 0.0;
+        }
+
+        diff_pos_global = link_pose.Rot().Inverse() * (- diff_pose_child_local);
+      }
+
       if (norm <= max_distance_)
       {
 #if GAZEBO_MAJOR_VERSION >= 8
@@ -252,7 +312,7 @@ void GazeboRosVacuumGripper::UpdateChild()
         {
           // apply friction like force
           // TODO(unknown): should apply friction actually
-          link_pose.Set(parent_pose.Pos(), link_pose.Rot());
+          link_pose.Set(parent_pose.Pos() + diff_pos_global, parent_pose.Rot() * diff_rot_global);
           links[j]->SetWorldPose(link_pose);
 
           if(!is_attached_)
@@ -269,8 +329,8 @@ void GazeboRosVacuumGripper::UpdateChild()
           {
             norm_force = max_force_;
           }
-          ignition::math::Vector3d force = norm_force * diff.Pos().Normalize();
-          links[j]->AddForce(force);
+          const ignition::math::Vector3d diff_direction = (parent_pose.Pos() - link_pose.Pos()).Normalize();
+          links[j]->AddForce(norm_force * diff_direction);
         }
         grasping_msg.data = true;
       }
