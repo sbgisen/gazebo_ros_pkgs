@@ -168,6 +168,9 @@ class GazeboRosVacuumGripper : public ModelPlugin
   private: int connect_count_;
   private: void Connect();
   private: void Disconnect();
+
+  /// \brief: variables use to simulate vacuum properly
+  private: double Volume(const ignition::math::Box box);
 };
 /** \} */
 /// @}

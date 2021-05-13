@@ -288,6 +288,13 @@ void GazeboRosVacuumGripper::UpdateChild()
   lock_.unlock();
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Calculate volume
+double GazeboRosVacuumGripper::Volume(const ignition::math::Box box)
+{
+  return box.Size().X() * box.Size().Y() * box.Size().Z();
+}
+
 // Custom Callback Queue
 ////////////////////////////////////////////////////////////////////////////////
 // custom callback queue thread
