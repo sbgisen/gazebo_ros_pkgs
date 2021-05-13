@@ -224,6 +224,9 @@ void GazeboRosVacuumGripper::UpdateChild()
       if (norm <= max_distance_)
       {
 #if GAZEBO_MAJOR_VERSION >= 8
+        links[j]->SetLinearAccel(ignition::math::Vector3<double>(0,0,0));
+        links[j]->SetAngularAccel(ignition::math::Vector3<double>(0,0,0));
+        
         links[j]->SetLinearVel(link_->WorldLinearVel());
         links[j]->SetAngularVel(link_->WorldAngularVel());
 #else
