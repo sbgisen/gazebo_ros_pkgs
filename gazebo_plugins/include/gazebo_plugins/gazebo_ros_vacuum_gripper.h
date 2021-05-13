@@ -83,6 +83,9 @@ namespace gazebo
         <robotNamespace>/robot/left_vacuum_gripper</robotNamespace>
         <bodyName>left_end_effector</bodyName>
         <topicName>grasping</topicName>
+        <maxForce>20.0</maxForce>
+        <maxDistance>0.05</maxDistance>
+        <minDistance>0.01</minDistance>
       </plugin>
     </gazebo>
   \endverbatim
@@ -141,6 +144,11 @@ class GazeboRosVacuumGripper : public ModelPlugin
 
   /// \brief for setting ROS name space
   private: std::string robot_namespace_;
+
+  /// \brief vacuum mechanism parameters
+  private: double max_force_;
+  private: double max_distance_;
+  private: double min_distance_;
 
   // Custom Callback Queue
   private: ros::CallbackQueue queue_;

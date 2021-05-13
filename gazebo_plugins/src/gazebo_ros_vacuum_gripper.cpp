@@ -102,6 +102,24 @@ void GazeboRosVacuumGripper::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf
   else
     topic_name_ = _sdf->GetElement("topicName")->Get<std::string>();
 
+  if (_sdf->HasElement("maxForce"))
+    max_force_ = _sdf->GetElement("maxForce")->Get<double>();
+  else
+    max_force_ = 20.0;
+  ROS_INFO_NAMED("vacuum_gripper", "maxForce: %lf", max_force_);
+
+  if (_sdf->HasElement("maxDistance"))
+    max_distance_ = _sdf->GetElement("maxDistance")->Get<double>();
+  else
+    max_distance_ = 0.05;
+  ROS_INFO_NAMED("vacuum_gripper", "maxDistance: %lf", max_distance_);
+
+  if (_sdf->HasElement("minDistance"))
+    min_distance_ = _sdf->GetElement("minDistance")->Get<double>();
+  else
+    min_distance_ = 0.01;
+  ROS_INFO_NAMED("vacuum_gripper", "minDistance: %lf", min_distance_);
+
   // Make sure the ROS node for Gazebo has already been initialized
   if (!ros::isInitialized())
   {
@@ -201,7 +219,8 @@ void GazeboRosVacuumGripper::UpdateChild()
 #endif
       ignition::math::Pose3d diff = parent_pose - link_pose;
       double norm = diff.Pos().Length();
-      if (norm < 0.05) {
+      if (norm <= max_distance_)
+      {
 #if GAZEBO_MAJOR_VERSION >= 8
         links[j]->SetLinearVel(link_->WorldLinearVel());
         links[j]->SetAngularVel(link_->WorldAngularVel());
@@ -209,18 +228,23 @@ void GazeboRosVacuumGripper::UpdateChild()
         links[j]->SetLinearVel(link_->GetWorldLinearVel());
         links[j]->SetAngularVel(link_->GetWorldAngularVel());
 #endif
-        double norm_force = 1 / norm;
-        if (norm < 0.01) {
+        if (norm <= min_distance_)
+        {
           // apply friction like force
           // TODO(unknown): should apply friction actually
           link_pose.Set(parent_pose.Pos(), link_pose.Rot());
           links[j]->SetWorldPose(link_pose);
         }
-        if (norm_force > 20) {
-          norm_force = 20;  // max_force
+        else
+        {
+          double norm_force = 1 / norm;
+          if (norm_force > max_force_)
+          {
+            norm_force = max_force_;
+          }
+          ignition::math::Vector3d force = norm_force * diff.Pos().Normalize();
+          links[j]->AddForce(force);
         }
-        ignition::math::Vector3d force = norm_force * diff.Pos().Normalize();
-        links[j]->AddForce(force);
         grasping_msg.data = true;
       }
     }
