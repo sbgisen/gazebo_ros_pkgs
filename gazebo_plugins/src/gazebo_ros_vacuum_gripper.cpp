@@ -79,6 +79,7 @@ void GazeboRosVacuumGripper::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf
   }
   else
     link_name_ = _sdf->GetElement("bodyName")->Get<std::string>();
+  ROS_INFO_NAMED("vacuum_gripper", "bodyName: %s", link_name_.c_str());
 
   link_ = _model->GetLink(link_name_);
   if (!link_)
@@ -101,6 +102,7 @@ void GazeboRosVacuumGripper::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf
   }
   else
     topic_name_ = _sdf->GetElement("topicName")->Get<std::string>();
+  ROS_INFO_NAMED("vacuum_gripper", "topicName: %s", topic_name_.c_str());
 
   if (_sdf->HasElement("maxForce"))
     max_force_ = _sdf->GetElement("maxForce")->Get<double>();
